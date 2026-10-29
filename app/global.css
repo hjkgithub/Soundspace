@@ -1,0 +1,185 @@
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', Arial, sans-serif;
+  background: #080b0a;
+  color: white;
+}
+
+button {
+  font: inherit;
+}
+
+.page {
+  min-height: 100vh;
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  background:
+    radial-gradient(
+      circle at 50% 35%,
+      var(--accent),
+      transparent 55%
+    ),
+    #080b0a;
+  transition: background 0.4s ease;
+}
+
+.navbar {
+  width: 100%;
+  max-width: 1000px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.navbar h2 {
+  font-size: 22px;
+  letter-spacing: -1px;
+}
+
+.navbar span {
+  color: #b5b5b5;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+.player {
+  width: 100%;
+  max-width: 420px;
+  margin: auto;
+  padding: 32px 24px;
+  text-align: center;
+  border: 1px solid #ffffff20;
+  border-radius: 28px;
+  background: #101312d9;
+  box-shadow: 0 24px 80px #0008;
+  backdrop-filter: blur(18px);
+}
+
+.eyebrow {
+  color: #b6b6b6;
+  font-size: 11px;
+  letter-spacing: 3px;
+}
+
+.album {
+  width: 210px;
+  height: 210px;
+  margin: 28px auto;
+  border-radius: 24px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(
+    135deg,
+    var(--accent),
+    #111
+  );
+  box-shadow: 0 12px 45px #0007;
+}
+
+.album span {
+  font-size: 90px;
+  font-weight: 800;
+}
+
+.genre {
+  color: #1ed760;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+}
+
+.player h1 {
+  margin: 12px 0 8px;
+  font-size: clamp(25px, 7vw, 36px);
+  letter-spacing: -1.5px;
+}
+
+.singer {
+  color: #b9b9b9;
+  font-size: 15px;
+}
+
+.progress {
+  height: 4px;
+  margin: 30px 0;
+  overflow: hidden;
+  border-radius: 10px;
+  background: #ffffff25;
+}
+
+.progress span {
+  display: block;
+  width: 35%;
+  height: 100%;
+  border-radius: inherit;
+  background: #1ed760;
+}
+
+.controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+}
+
+.controls button {
+  min-height: 48px;
+  padding: 0 18px;
+  border: 0;
+  border-radius: 30px;
+  background: #1ed760;
+  color: #071109;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.controls button:hover {
+  background: #54ed88;
+  transform: scale(1.03);
+}
+
+.counter {
+  margin-top: 28px;
+  color: #888;
+  font-size: 10px;
+  letter-spacing: 2px;
+}
+
+footer {
+  padding: 18px;
+  color: #999;
+  font-size: 11px;
+  text-align: center;
+}
+
+@media (max-width: 420px) {
+  .page {
+    padding: 16px;
+  }
+
+  .navbar span {
+    font-size: 8px;
+  }
+
+  .player {
+    padding: 24px 16px;
+  }
+
+  .album {
+    width: 180px;
+    height: 180px;
+  }
+
+  .controls button {
+    padding: 0 14px;
+  }
+}
