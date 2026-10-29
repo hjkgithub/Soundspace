@@ -3,34 +3,43 @@
 
 import { useEffect, useState } from "react";
 
+const genres = [
+  "rock", "pop", "hip hop", "indie", "metal",
+  "jazz", "classical", "electronic", "country",
+  "blues", "folk", "alternative", "soundtrack",
+  "R&B", "reggae", "punk", "dance", "acoustic",
+  "Indian music", "soul", "disco", "K-pop",
+  "Latin music", "world music", "ambient"
+];
+
 export default function Home() {
   const [songs, setSongs] = useState([]);
   const [index, setIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [batch, setBatch] = useState(0);
+  const [history, setHistory] = useState([]);
 
-  async function loadSongs() {
+  async function loadMore() {
+    if (loading) return;
+
     setLoading(true);
     setError("");
 
     try {
-      const terms = [
-        "rock", "pop", "hip hop", "indie",
-        "metal", "jazz", "classical", "electronic",
-        "country", "blues", "folk", "alternative",
-        "soundtrack", "R&B", "reggae", "punk",
-        "singer songwriter", "dance", "acoustic",
-        "Indian music"
-      ];
-
-      const shuffled = [...terms].sort(
-        () => Math.random() - 0.5
+      const collected = [];
+      const seen = new Set(
+        songs.map((song) => song.trackId)
       );
 
-      const collected = [];
-      const seen = new Set();
+      // Try different genres on each batch.
+      const start = (batch * 5) % genres.length;
+      const selected = Array.from(
+        { length: 5 },
+        (_, i) => genres[(start + i) % genres.length]
+      );
 
-      for (const term of shuffled) {
+      for (const term of selected) {
         const response = await fetch(
           `/api/search?term=${encodeURIComponent(term)}`
         );
@@ -40,72 +49,84 @@ export default function Home() {
         const data = await response.json();
 
         for (const song of data.results || []) {
-          if (!seen.has(song.trackId)) {
+          if (
+            song.trackId &&
+            !seen.has(song.trackId)
+          ) {
             seen.add(song.trackId);
             collected.push(song);
           }
         }
-
-        if (collected.length >= 150) break;
       }
 
-      if (!collected.length) {
-        throw new Error("No songs available right now.");
-      }
-
+      // Shuffle the new batch.
       for (let i = collected.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [collected[i], collected[j]] =
           [collected[j], collected[i]];
       }
 
-      setSongs(collected);
-      setIndex(0);
-    } catch (err) {
-      setError(err.message || "Unable to load songs.");
+      if (collected.length === 0) {
+        setError(
+          "No new songs found in this batch. Tap Next to try again."
+        );
+      } else {
+        setSongs((previous) => [
+          ...previous,
+          ...collected
+        ]);
+        setBatch((previous) => previous + 1);
+      }
+    } catch {
+      setError("Could not load more songs. Please try again.");
     } finally {
       setLoading(false);
     }
   }
 
   useEffect(() => {
-    loadSongs();
+    async function initialLoad() {
+      setLoading(true);
+
+      try {
+        const response = await fetch(
+          "/api/search?term=popular%20music"
+        );
+        const data = await response.json();
+
+        if (data.results?.length) {
+          setSongs(data.results);
+        } else {
+          setError("Could not find songs.");
+        }
+      } catch {
+        setError("Could not connect to the music catalogue.");
+      } finally {
+        setLoading(false);
+      }
+    }
+
+    initialLoad();
   }, []);
 
-  const song = songs[index];
-
-  function nextSong() {
+  async function nextSong() {
     if (index < songs.length - 1) {
-      setIndex(index + 1);
-    } else {
-      loadSongs();
+      setHistory((previous) => [...previous, index]);
+      setIndex((previous) => previous + 1);
+      return;
     }
+
+    // At the end: fetch the next batch.
+    await loadMore();
   }
 
   function previousSong() {
     if (index > 0) {
-      setIndex(index - 1);
+      setIndex((previous) => previous - 1);
     }
   }
 
-  if (loading) {
-    return (
-      <main className="page">
-        <h1>♫ SoundSpace</h1>
-        <p>Loading your music universe...</p>
-      </main>
-    );
-  }
-
-  if (error || !song) {
-    return (
-      <main className="page">
-        <h1>♫ SoundSpace</h1>
-        <p>{error || "No songs found."}</p>
-        <button onClick={loadSongs}>Try Again</button>
-      </main>
-    );
-  }
+  const song = songs[index];
 
   return (
     <main className="page">
@@ -117,65 +138,78 @@ export default function Home() {
       <section className="player">
         <p className="eyebrow">NOW DISCOVERING</p>
 
-        <div className="album">
-          <img
-            src={song.artworkUrl100?.replace(
-              "100x100bb",
-              "600x600bb"
+        {loading && !song ? (
+          <p>Loading music...</p>
+        ) : song ? (
+          <>
+            <div className="album">
+              <img
+                src={song.artworkUrl100?.replace(
+                  "100x100bb",
+                  "600x600bb"
+                )}
+                alt={song.trackName}
+              />
+            </div>
+
+            <p className="genre">
+              {song.primaryGenreName || "Music"}
+            </p>
+
+            <h1>{song.trackName}</h1>
+            <p className="singer">{song.artistName}</p>
+            <p className="album-name">
+              {song.collectionName || "Single"}
+            </p>
+
+            {song.previewUrl && (
+              <audio
+                key={song.trackId}
+                controls
+                src={song.previewUrl}
+              />
             )}
-            alt={song.collectionName || song.trackName}
-          />
-        </div>
 
-        <p className="genre">
-          {song.primaryGenreName || "Music"}
-        </p>
+            <div className="controls">
+              <button
+                onClick={previousSong}
+                disabled={index === 0}
+              >
+                ⏮ Previous
+              </button>
 
-        <h1>{song.trackName}</h1>
-        <p className="singer">{song.artistName}</p>
-        <p className="album-name">
-          {song.collectionName || "Single"}
-        </p>
+              <button
+                onClick={nextSong}
+                disabled={loading}
+              >
+                {loading ? "Loading..." : "Next ⏭"}
+              </button>
+            </div>
 
-        {song.previewUrl && (
-          <audio
-            key={song.trackId}
-            controls
-            src={song.previewUrl}
-          />
+            <p className="counter">
+              SONG {index + 1} · {songs.length} LOADED
+            </p>
+
+            {song.trackViewUrl && (
+              <a
+                className="store-link"
+                href={song.trackViewUrl}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Open song in Apple Music
+              </a>
+            )}
+          </>
+        ) : (
+          <p>No songs available.</p>
         )}
 
-        <div className="controls">
-          <button
-            onClick={previousSong}
-            disabled={index === 0}
-          >
-            ⏮ Previous
-          </button>
-
-          <button onClick={nextSong}>
-            Next ⏭
-          </button>
-        </div>
-
-        <p className="counter">
-          SONG {index + 1} OF {songs.length}
-        </p>
-
-        {song.trackViewUrl && (
-          <a
-            className="store-link"
-            href={song.trackViewUrl}
-            target="_blank"
-            rel="noreferrer"
-          >
-            Open song in Apple Music
-          </a>
-        )}
+        {error && <p>{error}</p>}
       </section>
 
       <footer>
-        Discover something new · SoundSpace
+        Discover more music · SoundSpace
       </footer>
     </main>
   );
