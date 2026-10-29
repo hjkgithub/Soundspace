@@ -154,6 +154,41 @@ button {
   letter-spacing: 2px;
 }
 
+
+.album {
+  overflow: hidden;
+}
+
+.album img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.album-name {
+  color: #aaa;
+  font-size: 13px;
+}
+
+.player audio {
+  width: 100%;
+  margin-top: 20px;
+}
+
+.controls button:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.store-link {
+  display: inline-block;
+  margin-top: 18px;
+  color: #1ed760;
+  font-size: 13px;
+  text-decoration: none;
+}
+
+
 footer {
   padding: 18px;
   color: #999;
