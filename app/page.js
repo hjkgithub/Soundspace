@@ -84,27 +84,46 @@ export default function Home() {
     }
   }
 
-  useEffect(() => {
-    async function initialLoad() {
-      setLoading(true);
+  
+useEffect(() => {
+  async function initialLoad() {
+    setLoading(true);
 
-      try {
-        const response = await fetch(
-          "/api/search?term=popular%20music"
-        );
-        const data = await response.json();
+    try {
+      const response = await fetch(
+        "/api/search?term=popular%20music"
+      );
 
-        if (data.results?.length) {
-          setSongs(data.results);
-        } else {
-          setError("Could not find songs.");
+      const data = await response.json();
+
+      if (data.results?.length) {
+        const shuffled = [...data.results];
+
+        // Shuffle songs randomly
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+
+          [shuffled[i], shuffled[j]] = [
+            shuffled[j],
+            shuffled[i],
+          ];
         }
-      } catch {
-        setError("Could not connect to the music catalogue.");
-      } finally {
-        setLoading(false);
+
+        setSongs(shuffled);
+        setIndex(0);
+      } else {
+        setError("Could not find songs.");
       }
+    } catch {
+      setError("Could not connect to the music catalogue.");
+    } finally {
+      setLoading(false);
     }
+  }
+
+  initialLoad();
+}, []);
+  
 
     initialLoad();
   }, []);
