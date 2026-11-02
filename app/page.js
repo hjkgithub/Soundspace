@@ -18,10 +18,9 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [batch, setBatch] = useState(0);
-  const [history, setHistory] = useState([]);
 
   async function loadMore() {
-    if (loading) return;
+    if (loading) return false;
 
     setLoading(true);
     setError("");
@@ -32,8 +31,8 @@ export default function Home() {
         songs.map((song) => song.trackId)
       );
 
-      // Try different genres on each batch.
       const start = (batch * 5) % genres.length;
+
       const selected = Array.from(
         { length: 5 },
         (_, i) => genres[(start + i) % genres.length]
@@ -49,94 +48,110 @@ export default function Home() {
         const data = await response.json();
 
         for (const song of data.results || []) {
-          if (
-            song.trackId &&
-            !seen.has(song.trackId)
-          ) {
+          if (song.trackId && !seen.has(song.trackId)) {
             seen.add(song.trackId);
             collected.push(song);
           }
         }
       }
 
-      // Shuffle the new batch.
       for (let i = collected.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [collected[i], collected[j]] =
-          [collected[j], collected[i]];
+
+        [collected[i], collected[j]] = [
+          collected[j],
+          collected[i],
+        ];
       }
 
       if (collected.length === 0) {
-        setError(
-          "No new songs found in this batch. Tap Next to try again."
-        );
-      } else {
-        setSongs((previous) => [
-          ...previous,
-          ...collected
-        ]);
-        setBatch((previous) => previous + 1);
+        setError("No new songs found. Please try again.");
+        return false;
       }
+
+      setSongs((previous) => [...previous, ...collected]);
+      setBatch((previous) => previous + 1);
+
+      return true;
     } catch {
-      setError("Could not load more songs. Please try again.");
+      setError("Could not load more songs.");
+      return false;
     } finally {
       setLoading(false);
     }
   }
 
-  
-useEffect(() => {
-  async function initialLoad() {
-    setLoading(true);
+  // Initial random song loading
+  useEffect(() => {
+    async function initialLoad() {
+      setLoading(true);
 
-    try {
-      const response = await fetch(
-        "/api/search?term=popular%20music"
-      );
+      try {
+        const response = await fetch(
+          "/api/search?term=popular%20music"
+        );
 
-      const data = await response.json();
-
-      if (data.results?.length) {
-        const shuffled = [...data.results];
-
-        // Shuffle songs randomly
-        for (let i = shuffled.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-
-          [shuffled[i], shuffled[j]] = [
-            shuffled[j],
-            shuffled[i],
-          ];
+        if (!response.ok) {
+          throw new Error("Music API failed");
         }
 
-        setSongs(shuffled);
-        setIndex(0);
-      } else {
-        setError("Could not find songs.");
-      }
-    } catch {
-      setError("Could not connect to the music catalogue.");
-    } finally {
-      setLoading(false);
-    }
-  }
+        const data = await response.json();
 
-  initialLoad();
-}, []);
-  
+        if (data.results?.length) {
+          const shuffled = [...data.results];
+
+          for (let i = shuffled.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+
+            [shuffled[i], shuffled[j]] = [
+              shuffled[j],
+              shuffled[i],
+            ];
+          }
+
+          setSongs(shuffled);
+          setIndex(0);
+        } else {
+          setError("Could not find songs.");
+        }
+      } catch {
+        setError("Could not connect to the music catalogue.");
+      } finally {
+        setLoading(false);
+      }
+    }
 
     initialLoad();
   }, []);
 
+  // Automatic Next every 30 seconds
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setIndex((current) => {
+        if (current < songs.length - 1) {
+          return current + 1;
+        }
+
+        return current;
+      });
+    }, 30000);
+
+    return () => clearInterval(timer);
+  }, [songs.length]);
+
   async function nextSong() {
+    if (loading) return;
+
     if (index < songs.length - 1) {
-      setHistory((previous) => [...previous, index]);
       setIndex((previous) => previous + 1);
       return;
     }
 
-    // At the end: fetch the next batch.
-    await loadMore();
+    const loaded = await loadMore();
+
+    if (loaded) {
+      setIndex((previous) => previous + 1);
+    }
   }
 
   function previousSong() {
@@ -176,7 +191,11 @@ useEffect(() => {
             </p>
 
             <h1>{song.trackName}</h1>
-            <p className="singer">{song.artistName}</p>
+
+            <p className="singer">
+              {song.artistName}
+            </p>
+
             <p className="album-name">
               {song.collectionName || "Single"}
             </p>
@@ -209,6 +228,8 @@ useEffect(() => {
               SONG {index + 1} · {songs.length} LOADED
             </p>
 
+            <p>Auto Next: Every 30 seconds</p>
+
             {song.trackViewUrl && (
               <a
                 className="store-link"
@@ -232,4 +253,5 @@ useEffect(() => {
       </footer>
     </main>
   );
-}
+                }
+              
